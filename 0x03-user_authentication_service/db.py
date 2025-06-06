@@ -7,8 +7,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import InvalidRequestError
-
 from user import Base, User
+
+VALID = ['id', 'email', 'hashed_password', 'session_id',
+                'reset_token']
 
 
 class DB:
@@ -51,13 +53,10 @@ class DB:
             InvalidRequestError: if no valid arguments are passed
             """
 
+        if not kwargs or any(x not in VALID for x in kwargs):
+            raise InvalidRequestError
+        session = self._session
         try:
-            query = self._session.query(User).filter_by(**kwargs)
-            user = query.first()
-            if user is None:
-                return NoResultFound
-            return user
-        except NoResultFound:
-            raise
-        except Exception as e:
-            raise InvalidRequestError from e
+            return session.query(User).filter_by(**kwargs).one()
+        except Exception:
+            raise NoResultFound
