@@ -5,6 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import InvalidRequestError
 
 from user import Base, User
 
@@ -40,3 +42,22 @@ class DB:
         session.add(new_user)
         session.commit()
         return new_user
+
+    def find_user_by(self, **kwargs) -> User:
+        """ Find the first row of users that matches the query filter 
+
+        Raises:
+            NoResultFound: if no match is occured
+            InvalidRequestError: if no valid arguments are passed
+            """
+
+        try:
+            query = self._session.query(User).filter_by(**kwargs)
+            user = query.first()
+            if user is None:
+                return NoResultFound
+            return user
+        except NoResultFound:
+            raise
+        except Exception as e:
+            raise InvalidRequestError from e
